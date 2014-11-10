@@ -387,7 +387,7 @@ Czy to już wystarcza nam do poprawienia programu?
 Jak widać, Python nie wie, o co nam chodzi i jakiego właściwie wyniku
 oczekujemy. Jak pokazaliśmy wcześniej, zarówno napisy (``str``), jak i liczby (``int``)
 można do siebie dodawać. Python nie wie, czy chodzi nam o liczbę ``63.5``, czy
-o napis ``"60.53"``. Tylko my to wiemy i musimy zawrzeć tę informację w programie.
+o napis ``"60.5"``. Tylko my to wiemy i musimy zawrzeć tę informację w programie.
 
 Poznajmy więc dwie kolejne funkcje:
 

@@ -317,6 +317,22 @@ będzie też z argumentami:
     >>> x
     43
 
+Argumenty, to zwykłe nazwy jakie widzieliśmy poprzednio. Są tylko dwie różnice:
+
+Po pierwsze nazwy argumentów są definiowane w momencie wywołania funkcji, a Python
+przypisuje odpowiednie wartości argumentów do właśnie stworzonych nazw.
+
+Po drugie, argumenty funkcji nie są dostępne poza tą funkcją, ponieważ są
+tworzone w momencie wywołania funkcji i niszczone w po jej zakończeniu. Jeżeli
+spróbujesz odwołać się do nazwy ``n`` zdefiniowanej w naszej funkcji
+:func:`plus_five` poza tą funkcją, Python zgłosi błąd::
+
+    >>> n
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    NameError: name 'n' is not defined
+
+
 
 Zwracanie wartości
 ------------------
@@ -460,6 +476,8 @@ stworzyć obiekt mający jej cechy (tzw. swoją instancję):
     >>> tuple()
     ()
 
+Instancja jest zatem nową wartością opisywaną przez klasę.
+
 Podsumowując, poznaliśmy już klasy :func:`int`, :func:`str`, :func:`tuple`,
 :func:`list`. Aby sprawdzić, jakiej klasy jest wartość (obiekt), używamy funkcji
 :func:`type`. Aby stworzyć instancję klasy (czyli nowy obiekt), wywołujemy
@@ -488,8 +506,12 @@ funkcje:
             print("Woof! Woof!")
 
 Klasy rozpoczynają się od słowa :keyword:`class`, po którym podajemy
-nazwę nowej klasy. Czym jest ``(object)`` wyjaśni się później, gdy
-będziemy chcieli stworzyć bardziej skomplikowane klasy.
+nazwę nowej klasy. ``(object)`` oznacza, że ``Dog`` jest podklasą
+``object``. Instancje klasy ``Dog`` będą typu ``Dog``, ale także bardziej
+ogólnego typu ``object``.
+
+Każdy wartość w Pythonie jest typu ``object``, a co za tym idzie wszystkie
+wartości są obiektami.
 
 Warto natomiast zwrócić uwagę na fakt, że każda funkcja w klasie musi mieć
 co najmniej jeden argument. Jego wartością będzie obiekt, z którego wywołaliśmy
@@ -505,6 +527,7 @@ tę funkcję (czyli to, co przed kropką):
     Woof! Woof!
 
 Argument ten może nazywać się dowolnie, ale intuicyjne jest, aby nazwać go ``self``.
+Jest to też powszechnie przyjęta `konwencja <http://legacy.python.org/dev/peps/pep-0008/>`_ .
 
 
 Atrybuty obiektów
@@ -547,6 +570,8 @@ o specjalnej nazwie ``__init__``:
     Woof! Burek! Woof!
     Woof! Pluto! Woof!
 
+Funkcja :func:`__init__` jest wywoływana w momencie tworzenia obiektu. Będziemy
+nazywać ją konstruktorem, gdyż ułatwia tworzenie obiektu.
 
 Pełna choinka
 =============
