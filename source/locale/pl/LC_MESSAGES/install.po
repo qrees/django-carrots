@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Django Carrots 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2014-11-23 21:43+0100\n"
-"PO-Revision-Date: 2015-01-10 22:34+0100\n"
+"PO-Revision-Date: 2015-01-10 22:47+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -286,12 +286,17 @@ msgid ""
 "Checkout _`https://pip.pypa.io/en/latest/installing.html` for more "
 "information about installing pip."
 msgstr ""
+"Sprawdź _`https://pip.pypa.io/en/latest/installing.html`aby uzyskać więcej "
+"informacji na temat instalacji `pip`."
 
 #: ../../source/install.rst:201
 msgid ""
 "If you can't find your ``pip`` or there is any problem after typing ``which "
 "pip`` (``where pip`` on windows) there could be a need to reinstall pip:"
 msgstr ""
+"Jeżeli nie możesz znaleźć ``pip``, lub jest problem po wpisaniu ``wchich "
+"pip`` (``where pip`` pod Windowsem), może być konieczna reinstalacja "
+"``pip``:"
 
 #: ../../source/install.rst:129
 msgid ""
@@ -300,6 +305,10 @@ msgid ""
 "causes Python3.4 `venv` module to fail when installing with `pip`. To work "
 "around this please use this command to create virtual environment::"
 msgstr ""
+"Ubuntu 14.04 posiada błąd "
+"(https://bugs.launchpad.net/ubuntu/+source/python3.4/+bug/1290847), który "
+"uniemożliwia zainstalowanie `pip` przez moduł `venv`. Aby obejść ten "
+"problem, użyj tego polecenia aby stworzyć środowisko wirtualne::"
 
 #: ../../source/install.rst:190
 msgid ""
@@ -307,28 +316,67 @@ msgid ""
 "which pip you are using with command: ``pip --version``. You can do this by "
 "running one of these commands:"
 msgstr ""
+"Komenda ``pip`` może być już dostępna w twoim systemie. Zawsze sprawdzaj, "
+"której komendy ``pip` używasz poleceniem ``pip --version``. Możesz to zrobić"
+" uruchamiając jedno z poleceń:"
 
 #: ../../source/install.rst:199
 msgid ""
 "It will give you pip version and a path to your virtual environment "
 "directory."
 msgstr ""
+"Wyświetlona zostanie wersja ``pip`` oraz ścieżka do środowiska wirtualnego."
 
-#~ msgid ""
-#~ "Ubuntu 14.04 has a bug "
-#~ "(https://bugs.launchpad.net/ubuntu/+source/python3.4/+bug/1290847) that "
-#~ "causes Python3.4 `venv` module fail when installing with `pip`. To work "
-#~ "around this please use this command to create virtual environment::"
+#~ msgid "$ python --version Python 3.4.0"
+#~ msgstr ""
+
+#~ msgid "sudo apt-get install python3.4"
+#~ msgstr ""
+
+#~ msgid "sudo yum install python3.4"
 #~ msgstr ""
 
 #~ msgid ""
-#~ "You may already have ``pip`` command available on your system. Always check "
-#~ "which pip you are using with command: ``pip --version``. You can check:"
+#~ "Microsoft Windows [Version 6.1.7601] Copyright (c) 2009 Microsoft "
+#~ "Corporation. All rights reserved.   C:\\Users\\Name>"
+#~ msgstr ""
+
+#~ msgid ":: Windows C:\\Users\\lrekucki> C:\\Python34\\python -m venv workshops"
+#~ msgstr ""
+
+#~ msgid "# Linux or Mac ~$ python3.4 -m venv workshops"
+#~ msgstr ""
+
+#~ msgid ":: Windows C:\\Users\\lrekucki> workshops\\Scripts\\activate"
+#~ msgstr ""
+
+#~ msgid "# Linux or Mac ~$ source workshops/bin/activate"
 #~ msgstr ""
 
 #~ msgid ""
-#~ "to find pip installed in your virtual environment. It will give you a path "
-#~ "to your virtual environment directory."
+#~ ":: Windows (workshops) C:\\Users\\lrekucki>where python "
+#~ "C:\\Users\\lrekucki\\workshops\\Scripts\\python.exe ...  (workshops) "
+#~ "C:\\Users\\lrekucki>where pip "
+#~ "C:\\Users\\lrekucki\\workshops\\Scripts\\pip.exe ...  (workshops) "
+#~ "C:\\Users\\lrekucki>python --version 3.4.0"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "# Linux or Mac (workshops) ~$ which python "
+#~ "/home/lrekucki/workshops/bin/python (workshops) ~$ which pip "
+#~ "/home/lrekucki/workshops/bin/pip ...  (workshops) ~$ python --version 3.4.0"
+#~ msgstr ""
+
+#~ msgid "~$ pip --version ~$ pip3 --version ~$ pip3.4 --version"
+#~ msgstr ""
+
+#~ msgid "~$ python -m pip uninstall pip ~$ python -m ensurepip"
+#~ msgstr ""
+
+#~ msgid "(workshops) ~$ python --version 3.4.0"
+#~ msgstr ""
+
+#~ msgid "(workshops) ~$ pip install ipython"
 #~ msgstr ""
 
 #~ msgid ""
