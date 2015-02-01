@@ -1,0 +1,20 @@
+<html>
+<head>
+
+<style>
+    pre {
+        border: 1px solid black;
+    }
+</style>
+</head>
+<body>
+{{ document }}
+{% for source in document.sources %}
+{% for line in source.parsed.asList %}
+<pre>
+{{ line }}
+</pre>
+{% endfor %}
+{% endfor %}
+</body>
+</html>
