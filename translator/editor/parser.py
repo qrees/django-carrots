@@ -7,7 +7,7 @@ from pyparsing import OneOrMore, StringEnd, LineEnd, ZeroOrMore, Regex, Group, L
 def debug(name):
 
     def inner_debug(text, loc, parsed):
-        print name, ":", parsed
+        print name, loc, ":", "".join(parsed)[:50], '...'
     return inner_debug
 
 
@@ -28,6 +28,7 @@ Block.setParseAction(debug("block"))
 
 MultiLine = OneOrMore(TextLine)
 Text = MultiLine + Suppress(LineEnd())
+Text.setParseAction(debug("text"))
 
 HeaderMarker = Regex("={3,}|-{3,}|_{3,}|\.{3,}|,{3,}") + LineEnd()
 Header = Optional(HeaderMarker()) + TextLine() + HeaderMarker()

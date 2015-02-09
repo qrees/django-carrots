@@ -3,18 +3,68 @@
 
 <style>
     pre {
-        border: 1px solid black;
+        border: none;
+        width: 100%;
+        padding: 0px;
+        margin: 0px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    textarea {
+        box-sizing: border-box;
+        padding: 0px;
+        margin: 0px;
+        border: none;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        resize: none;
+        outline: none;
+        white-space: pre;
+    }
+
+    td {
+        max-width: 50%;
+        width: 50%;
+        overflow: hidden;
+        position: relative;
+        border: none;
+        vertical-align: top;
+        padding-bottom: 15px;
+        padding-right: 10px;
+    }
+
+
+    td div {
+        padding: 0;
+        margin: 1px;
+        position: relative;
+    }
+    table {
+        table-layout: fixed;
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
     }
 </style>
 </head>
 <body>
 {{ document }}
-{% for source in document.sources %}
-{% for line in source.parsed.asList %}
-<pre>
-{{ line }}
-</pre>
-{% endfor %}
+<table>
+{% for paragraph in document.paragraphs %}
+    <tr>
+        {% for text in paragraph.texts %}
+        <td>
+            <div>
+            <pre>{{ text }}</pre>
+            <textarea wrap="off">{{ text }}</textarea>
+            </div>
+        </td>
+        {% endfor %}
+    </tr>
 {% endfor %}
 </body>
 </html>

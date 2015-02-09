@@ -327,10 +327,10 @@ Python tells you it is not defined:
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
     NameError: name 'n' is not defined
-    
+
 That is, our prim and proper Python cleans up his room at the end of a function call :)
-    
-    
+
+
 Returning values
 ----------------
 

@@ -4,25 +4,62 @@ from django.shortcuts import render
 import os
 from docutils import core, io
 from docutils.nodes import NodeVisitor
+from pyparsing import ParseException as PE
 from editor.parser import DocumentParser
 
 
 SOURCE_LANGUAGE = 'en'
+DIR_NAME_PREFIX = 'source-'
+LANGUAGES = {
+    'en': 0,
+    'pl': 1
+}
+
+class ParseException(Exception):
+    pass
+
 
 class DocumentSource(object):
 
-    def __init__(self, path):
+    def __init__(self, path, language):
         self._path = path
+        self._lang = language
 
     def parsed(self):
         with open(self._path, 'r') as source:
             source_text = source.read().decode('utf-8')
-        results = DocumentParser.parseString(source_text)
+        try:
+            results = DocumentParser.parseString(source_text)
+        except PE as exc:
+            raise ParseException("%s in %s" % (exc, self._path))
         return results
+
+    def get_language(self):
+        return self._lang
+
+
+class Paragraph(object):
+
+    def __init__(self):
+        self._texts = {}
+
+    def set_for_source(self, source, text):
+        self._texts[source] = text
+
+    def set_empty_source(self, source):
+        self._texts[source] = None
+
+    def texts(self):
+        texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0].get_language()])
+        return [x[1] for x in texts]
 
 
 class Document(object):
     def __init__(self, name, sources):
+        """
+        name - document name
+        sources - list of directories, one for each language
+        """
         self._name = name
         self._sources = sources
 
@@ -35,9 +72,31 @@ class Document(object):
     def sources(self):
         sources = []
         for source in self._sources:
+            file_name = os.path.basename(source)
+            language = file_name[len(DIR_NAME_PREFIX):]
             path = os.path.join(source, self._name)
-            sources.append(DocumentSource(path))
+            sources.append(DocumentSource(path, language))
         return sources
+
+    def paragraphs(self):
+        sources = self.sources()
+        parse_results = [(source, source.parsed()) for source in sources]
+        paragraphs = []
+        empty = False
+        while not empty:
+            empty = True
+            paragraph = Paragraph()
+            for item in parse_results:
+                source, parse_result = item
+                if parse_result:
+                    source_paragraph = parse_result.pop(0)
+                    paragraph.set_for_source(source, source_paragraph)
+                    empty = False
+                else:
+                    paragraph.set_empty_source(source)
+            if not empty:
+                paragraphs.append(paragraph)
+        return paragraphs
 
 
 def get_sources():
@@ -51,7 +110,7 @@ def get_sources():
         item_path = os.path.join(proj_path, item)
         if not os.path.isdir(item_path):
             continue
-        if not item.startswith('source-'):
+        if not item.startswith(DIR_NAME_PREFIX):
             continue
         sources.append(item_path)
     return sources
