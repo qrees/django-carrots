@@ -508,12 +508,14 @@ Create a class ``XMASTree`` which for a given size and upon calling the method `
 following pictures (sizes 1, 2 and 3):
 
 ::
+
           *
          /|\
         /_|_\
           |
 
 ::
+
            *
           /|\
          /_|_\
@@ -523,6 +525,7 @@ following pictures (sizes 1, 2 and 3):
            |
 
 ::
+
             *
            /|\
           /_|_\
