@@ -1,11 +1,14 @@
+from StringIO import StringIO
+import hashlib
 from django.shortcuts import render
 
-# Create your views here.
 import os
 from docutils import core, io
 from docutils.nodes import NodeVisitor
 from pyparsing import ParseException as PE
-from editor.parser import DocumentParser
+from tinydb import where
+from editor.parser import Parser
+from editor.db import paragraphs
 
 
 SOURCE_LANGUAGE = 'en'
@@ -29,7 +32,9 @@ class DocumentSource(object):
         with open(self._path, 'r') as source:
             source_text = source.read().decode('utf-8')
         try:
-            results = DocumentParser.parseString(source_text)
+            parser = Parser(StringIO(source_text))
+            results = parser.parse()
+
         except PE as exc:
             raise ParseException("%s in %s" % (exc, self._path))
         return results
@@ -38,20 +43,73 @@ class DocumentSource(object):
         return self._lang
 
 
+def hash_paragraph(text):
+    m = hashlib.md5()
+    m.update(text.encode('utf-8'))
+    return m.hexdigest()
+
+
+class Status(object):
+    INVALID = 'invalid'
+    VALID = 'valid'
+
+
+class Text(object):
+
+    def __init__(self, text, status):
+        self._text = text
+        self._status = status
+
+    def __str__(self):
+        return self._text.encode('utf-8')
+
+    def __unicode__(self):
+        return u'' if self._text is None else self._text
+
+    def status(self):
+        return self._status
+
+    def is_ok(self):
+        return self._status == Status.VALID
+
+
 class Paragraph(object):
 
     def __init__(self):
         self._texts = {}
+        self._sources = {}
 
     def set_for_source(self, source, text):
-        self._texts[source] = text
+        self._texts[source.get_language()] = text
+        self._sources[source.get_language()] = source
 
     def set_empty_source(self, source):
-        self._texts[source] = None
+        self._texts[source.get_language()] = None
 
     def texts(self):
-        texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0].get_language()])
-        return [x[1] for x in texts]
+        status = self.get_status()
+        texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0]])
+        return [Text(x[1], status[x[0]]) for x in texts]
+
+    def get_status(self):
+        invalid_status = {key: Status.INVALID for key, value in self._texts.items()}
+        invalid_status[SOURCE_LANGUAGE] = Status.VALID
+        source_text = self._texts.get(SOURCE_LANGUAGE)
+        if source_text is None:
+            return invalid_status
+        current = {}
+        for key, value in self._texts.items():
+            current[key] = hash_paragraph(value)
+        hashes = paragraphs.search(where(SOURCE_LANGUAGE) == current[SOURCE_LANGUAGE])
+        if len(hashes) > 1:
+            raise Exception("There are to many results for text %s: %r" % (source_text[:20], hashes))
+        if not hashes:
+            return invalid_status
+        status = {}
+        for key, value in current.items():
+            status[key] = Status.VALID if value == hashes[key] else Status.INVALID
+        status[SOURCE_LANGUAGE] = Status.VALID
+        return status
 
 
 class Document(object):

@@ -1,54 +1,11 @@
 <html>
 <head>
-
+    <style></style>
+    <link rel="stylesheet" href="/static/css/editor.css"/>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="/static/js/editor.js"></script>
 <style>
-    pre {
-        border: none;
-        width: 100%;
-        padding: 0px;
-        margin: 0px;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-    textarea {
-        box-sizing: border-box;
-        padding: 0px;
-        margin: 0px;
-        border: none;
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        overflow: hidden;
-        resize: none;
-        outline: none;
-        white-space: pre;
-    }
-
-    td {
-        max-width: 50%;
-        width: 50%;
-        overflow: hidden;
-        position: relative;
-        border: none;
-        vertical-align: top;
-        padding-bottom: 15px;
-        padding-right: 10px;
-    }
-
-
-    td div {
-        padding: 0;
-        margin: 1px;
-        position: relative;
-    }
-    table {
-        table-layout: fixed;
-        width: 100%;
-        border-collapse: collapse;
-        border-spacing: 0;
-    }
 </style>
 </head>
 <body>
@@ -58,13 +15,22 @@
     <tr>
         {% for text in paragraph.texts %}
         <td>
-            <div>
+            <div class="paragraph">
             <pre>{{ text }}</pre>
             <textarea wrap="off">{{ text }}</textarea>
+            </div>
+            {% if text.is_ok %}
+            <div class="status-valid">
+            {% else %}
+            <div class="status-invalid" data-onclick="toggle_valid">
+            {% endif %}
+                <i class="fa fa-check status valid"></i>
+                <i class="fa fa-close status invalid"></i>
             </div>
         </td>
         {% endfor %}
     </tr>
 {% endfor %}
+</table>
 </body>
 </html>

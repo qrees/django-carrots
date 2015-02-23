@@ -1,0 +1,111 @@
+
+pre {
+    border: none;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding-bottom: 32px;
+}
+
+textarea:focus {
+    overflow: auto;
+}
+
+textarea {
+    box-sizing: border-box;
+    padding: 0px;
+    margin: 0px;
+    border: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    resize: none;
+    outline: none;
+    white-space: pre;
+}
+
+td {
+    max-width: 50%;
+    width: 50%;
+    overflow: hidden;
+    position: relative;
+    border: none;
+    vertical-align: top;
+    padding-bottom: 15px;
+    padding-right: 10px;
+}
+
+
+.paragraph {
+    padding: 0;
+    margin: 1px;
+    position: relative;
+    border-top: 1px solid black;
+    margin-right: 20px;
+}
+
+table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.status-valid, .status-invalid {
+    position: absolute;
+    top: 0px;
+    right: 10px;
+}
+
+.status-valid .invalid {
+    display: none;
+}
+
+.status-invalid .valid {
+    display: none;
+}
+
+.status-valid:hover .invalid {
+    display: inline-block;
+}
+
+.status-valid:hover .valid {
+    display: none;
+}
+
+.status-invalid:hover .invalid {
+    display: none;
+}
+
+.status-invalid:hover .valid {
+    display: inline-block;
+}
+
+.valid {
+    color: #1d9d74;
+}
+
+.invalid {
+    color: #a94442;
+}
+
+.text-success {
+  color: #1d9d74;
+}
+
+.text-info {
+  color: #007dbc;
+}
+
+.text-warning {
+  color: #8a6d3b;
+}
+
+.text-danger {
+  color: #a94442;
+}
