@@ -1,5 +1,6 @@
 from StringIO import StringIO
 import hashlib
+from pprint import pprint
 from django.shortcuts import render
 
 import os
@@ -7,6 +8,7 @@ from docutils import core, io
 from docutils.nodes import NodeVisitor
 from pyparsing import ParseException as PE
 from tinydb import where
+from editor.ajax import json_view
 from editor.parser import Parser
 from editor.db import paragraphs
 
@@ -18,8 +20,109 @@ LANGUAGES = {
     'pl': 1
 }
 
+
 class ParseException(Exception):
     pass
+
+
+def hash_paragraph(text):
+    m = hashlib.md5()
+    m.update(text.encode('utf-8'))
+    return m.hexdigest()
+
+
+class Status(object):
+    INVALID = 'invalid'
+    VALID = 'valid'
+
+
+class Text(object):
+
+    def __init__(self, text, status, hashed, language):
+        self._text = text
+        self._status = status
+        self._hashed = hashed
+        self._language = language
+
+    def __str__(self):
+        return self._text.encode('utf-8')
+
+    def __unicode__(self):
+        return u'' if self._text is None else self._text
+
+    def status(self):
+        return self._status
+
+    def is_ok(self):
+        return self._status == Status.VALID
+
+    def hash(self):
+        return self._hashed
+
+    def lang(self):
+        return self._language
+
+    def is_source(self):
+        return self._language == SOURCE_LANGUAGE
+
+
+class Paragraph(object):
+
+    def __init__(self):
+        self._texts = {}
+        self._sources = {}
+        self._status = None
+        self._hash = None
+        self._text_objs = None
+
+    def set_for_source(self, source, text):
+        self._texts[source.get_language()] = text
+        self._sources[source.get_language()] = source
+
+    def set_empty_source(self, source):
+        self._texts[source.get_language()] = None
+
+    def texts(self):
+        self.do_status()
+        if self._text_objs is None:
+            texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0]])
+            text_objs = []
+            for language, text in texts:
+                text_obj = Text(text, self._status[language], self._hash[language], language)
+                text_objs.append(text_obj)
+            self._text_objs = text_objs
+        return self._text_objs
+
+    def do_hash(self):
+        if self._hash is None:
+            current = {}
+            for key, value in self._texts.items():
+                if value is None:
+                    current[key] = None
+                else:
+                    current[key] = hash_paragraph(value)
+            self._hash = current
+
+    def do_status(self):
+        self.do_hash()
+        invalid_status = {key: Status.INVALID for key, value in self._texts.items()}
+        invalid_status[SOURCE_LANGUAGE] = Status.VALID
+        if self._status is None:
+            hashes = paragraphs.search(where(SOURCE_LANGUAGE) == self._hash[SOURCE_LANGUAGE])
+            source_text = self._texts.get(SOURCE_LANGUAGE)
+            if source_text is None:
+                self._status = invalid_status
+            elif len(hashes) > 1:
+                raise Exception("There are to many results for text %s: %r" % (source_text[:20], hashes))
+            elif not hashes:
+                self._status = invalid_status
+            else:
+                hashes = hashes[0]
+                status = {}
+                for key, value in self._hash.items():
+                    status[key] = Status.VALID if value == hashes[key] else Status.INVALID
+                status[SOURCE_LANGUAGE] = Status.VALID
+                self._status = status
 
 
 class DocumentSource(object):
@@ -43,75 +146,6 @@ class DocumentSource(object):
         return self._lang
 
 
-def hash_paragraph(text):
-    m = hashlib.md5()
-    m.update(text.encode('utf-8'))
-    return m.hexdigest()
-
-
-class Status(object):
-    INVALID = 'invalid'
-    VALID = 'valid'
-
-
-class Text(object):
-
-    def __init__(self, text, status):
-        self._text = text
-        self._status = status
-
-    def __str__(self):
-        return self._text.encode('utf-8')
-
-    def __unicode__(self):
-        return u'' if self._text is None else self._text
-
-    def status(self):
-        return self._status
-
-    def is_ok(self):
-        return self._status == Status.VALID
-
-
-class Paragraph(object):
-
-    def __init__(self):
-        self._texts = {}
-        self._sources = {}
-
-    def set_for_source(self, source, text):
-        self._texts[source.get_language()] = text
-        self._sources[source.get_language()] = source
-
-    def set_empty_source(self, source):
-        self._texts[source.get_language()] = None
-
-    def texts(self):
-        status = self.get_status()
-        texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0]])
-        return [Text(x[1], status[x[0]]) for x in texts]
-
-    def get_status(self):
-        invalid_status = {key: Status.INVALID for key, value in self._texts.items()}
-        invalid_status[SOURCE_LANGUAGE] = Status.VALID
-        source_text = self._texts.get(SOURCE_LANGUAGE)
-        if source_text is None:
-            return invalid_status
-        current = {}
-        for key, value in self._texts.items():
-            current[key] = hash_paragraph(value)
-        hashes = paragraphs.search(where(SOURCE_LANGUAGE) == current[SOURCE_LANGUAGE])
-        if len(hashes) > 1:
-            raise Exception("There are to many results for text %s: %r" % (source_text[:20], hashes))
-        if not hashes:
-            return invalid_status
-        status = {}
-        for key, value in current.items():
-            status[key] = Status.VALID if value == hashes[key] else Status.INVALID
-        status[SOURCE_LANGUAGE] = Status.VALID
-        return status
-
-
 class Document(object):
     def __init__(self, name, sources):
         """
@@ -120,6 +154,7 @@ class Document(object):
         """
         self._name = name
         self._sources = sources
+        self._paragraphs = None
 
     def __str__(self):
         return self._name
@@ -161,8 +196,6 @@ def get_sources():
     path = os.path.realpath(__file__)
     proj_path = os.path.dirname(os.path.dirname(os.path.dirname(path)))
     dir_items = os.listdir(proj_path)
-    print dir_items
-    print proj_path
     sources = []
     for item in dir_items:
         item_path = os.path.join(proj_path, item)
@@ -174,15 +207,21 @@ def get_sources():
     return sources
 
 
+_documents_cache = None
+
+
 def get_documents():
-    sources = get_sources()
-    documents = set([x for x in os.listdir(sources[0]) if x.endswith('.rst')])
+    global _documents_cache
+    if _documents_cache is None:
+        sources = get_sources()
+        documents = set([x for x in os.listdir(sources[0]) if x.endswith('.rst')])
 
-    for item in sources[1:]:
-        next_documents = set([x for x in os.listdir(item) if x.endswith('.rst')])
-        documents = documents & next_documents
+        for item in sources[1:]:
+            next_documents = set([x for x in os.listdir(item) if x.endswith('.rst')])
+            documents = documents | next_documents
 
-    return [Document(x, sources) for x in documents]
+        _documents_cache = [Document(x, sources) for x in documents]
+    return _documents_cache
 
 
 def internals(input_string, source_path=None, destination_path=None,
@@ -215,29 +254,6 @@ class MyVisitor(NodeVisitor):
         print "Visiting", node
 
 
-def match(first, second):
-    with open(first, 'r') as source:
-        source_text = source.read().decode('utf-8')
-
-
-    #
-    # parts = []
-    # current = StringIO()
-    #
-    # for line in source_text.split("\n"):
-    #     if line == '':
-    #         parts.append(current.getvalue())
-    #         current = StringIO()
-    #         continue
-    #     line = line + "\n"
-    #     current.write(line)
-
-    print parts
-#
-# document = list(documents)[0]
-# match(os.path.join(sources[0], document), os.path.join(sources[1], document))
-
-
 def document_list_view(request):
     documents = get_documents()
     return render(
@@ -253,3 +269,21 @@ def document_view(request, name):
         request,
         'editor/document_item.html',
         {'document': document})
+
+
+@json_view
+def set_valid(data, request):
+    pprint(data)
+    hashes = paragraphs.search(where(SOURCE_LANGUAGE) == data['source_hash'])
+    return {}
+    if len(hashes):
+        paragraphs.update(
+            {data['target_language']: data['target_hash']},
+            where(SOURCE_LANGUAGE) == data['source_hash'])
+    else:
+        paragraphs.insert(
+            {
+                data['source_language']: data['source_hash'],
+                data['target_language']: data['target_hash']
+            })
+    return {}

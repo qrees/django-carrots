@@ -56,6 +56,10 @@ table {
     border-spacing: 0;
 }
 
+.status {
+    cursor: pointer;
+}
+
 .status-valid, .status-invalid {
     position: absolute;
     top: 0px;

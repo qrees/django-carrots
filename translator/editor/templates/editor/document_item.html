@@ -14,17 +14,20 @@
 {% for paragraph in document.paragraphs %}
     <tr>
         {% for text in paragraph.texts %}
-        <td>
+        <td
+            data-lang="{{ text.lang }}"
+            data-hash="{{ text.hash }}"
+            data-is-source="{{ text.is_source }}">
             <div class="paragraph">
-            <pre>{{ text }}</pre>
-            <textarea wrap="off">{{ text }}</textarea>
+                <pre>{{ text }}</pre>
+                <textarea wrap="off">{{ text }}</textarea>
             </div>
             {% if text.is_ok %}
             <div class="status-valid">
             {% else %}
-            <div class="status-invalid" data-onclick="toggle_valid">
+            <div class="status-invalid">
             {% endif %}
-                <i class="fa fa-check status valid"></i>
+                <i data-onclick="set_valid" class="fa fa-check status valid"></i>
                 <i class="fa fa-close status invalid"></i>
             </div>
         </td>
