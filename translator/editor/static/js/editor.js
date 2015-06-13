@@ -49,9 +49,11 @@
         var source = target.parent().find("[data-is-source=True]");
         var source_hash = source.data('hash');
         var source_lang = source.data('lang');
+        var source_text = source.find('textarea').val();
         var data = {
             'source_hash': source_hash,
             'source_language': source_lang,
+            'source_text': source_text,
             'target_hash': target_hash,
             'target_language': target_language,
             'target_text': target_text

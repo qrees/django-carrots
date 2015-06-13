@@ -13,7 +13,7 @@
 <table>
 {% for paragraph in document.paragraphs %}
     <tr>
-        {% for text in paragraph.texts %}
+        {% for language, text in paragraph.texts %}
         <td
             data-lang="{{ text.lang }}"
             data-hash="{{ text.hash }}"

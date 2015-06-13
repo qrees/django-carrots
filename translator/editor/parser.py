@@ -185,7 +185,7 @@ class Parser(object):
         matched = CODE_RE.match(line)
         indent = self.get_line_indent(line)
         if indent == 0 and len(line.strip()) > 0 and not matched:
-            print "Line is %r, switching to PARAGRAPH" % (line,)
+            # print "Line is %r, switching to PARAGRAPH" % (line,)
             self.state = State.PARAGRAPH_START
             self.next_part()
             return

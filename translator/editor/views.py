@@ -38,11 +38,22 @@ class Status(object):
 
 class Text(object):
 
-    def __init__(self, text, status, hashed, language):
+    def __init__(self, text=None, source=None, status=None):
+        self._source = source
         self._text = text
         self._status = status
-        self._hashed = hashed
-        self._language = language
+
+    def set_text(self, text):
+        self._text = text
+
+    def get_text(self):
+        return self._text
+
+    def set_source(self, source):
+        self._source = source
+
+    def __hash__(self):
+        return hash(self._text)
 
     def __str__(self):
         return self._text.encode('utf-8')
@@ -50,79 +61,95 @@ class Text(object):
     def __unicode__(self):
         return u'' if self._text is None else self._text
 
+    def set_status(self, status):
+        self._status = status
+
     def status(self):
         return self._status
 
     def is_ok(self):
         return self._status == Status.VALID
 
-    def hash(self):
-        return self._hashed
-
     def lang(self):
-        return self._language
+        return self._source.get_language()
 
     def is_source(self):
-        return self._language == SOURCE_LANGUAGE
+        return self.lang() == SOURCE_LANGUAGE
+
+
+db = {}
 
 
 class Paragraph(object):
 
     def __init__(self):
-        self._texts = {}
-        self._sources = {}
-        self._status = None
-        self._hash = None
-        self._text_objs = None
+        # self._texts = {}
+        # self._sources = {}
+        # self._status = None
+        self._text_objs = {}
 
-    def set_for_source(self, source, text):
-        self._texts[source.get_language()] = text
-        self._sources[source.get_language()] = source
+    def set_for_source(self, source, text_obj):
+        assert isinstance(text_obj, Text)
+        language = source.get_language()
+        self._text_objs[language] = text_obj
+        # if language not in self._text_objs:
+        #     self._text_objs[language] = Text(self)
+        # self._text_objs[language].set_text(text)
+        # self._text_objs[language].set_source(source)
 
     def set_empty_source(self, source):
-        self._texts[source.get_language()] = None
+        language = source.get_language()
+        if language not in self._text_objs:
+            self._text_objs[language] = Text()
+        self._text_objs[language].set_text("")
+        self._text_objs[language].set_source(source)
 
     def texts(self):
         self.do_status()
-        if self._text_objs is None:
-            texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0]])
-            text_objs = []
-            for language, text in texts:
-                text_obj = Text(text, self._status[language], self._hash[language], language)
-                text_objs.append(text_obj)
-            self._text_objs = text_objs
-        return self._text_objs
-
-    def do_hash(self):
-        if self._hash is None:
-            current = {}
-            for key, value in self._texts.items():
-                if value is None:
-                    current[key] = None
-                else:
-                    current[key] = hash_paragraph(value)
-            self._hash = current
+        # if self._text_objs is None:
+        #     texts = sorted(self._texts.items(), key=lambda item: LANGUAGES[item[0]])
+        #     text_objs = []
+        #     for language, text in texts:
+        #         text_obj = Text(self, language)
+        #         text_objs.append(text_obj)
+        #     self._text_objs = text_objs
+        return self._text_objs.items()
+    #
+    # def do_hash(self):
+    #     if self._hash is None:
+    #         current = {}
+    #         for key, value in self._texts.items():
+    #             if value is None:
+    #                 current[key] = None
+    #             else:
+    #                 current[key] = hash_paragraph(value)
+    #         self._hash = current
 
     def do_status(self):
-        self.do_hash()
-        invalid_status = {key: Status.INVALID for key, value in self._texts.items()}
-        invalid_status[SOURCE_LANGUAGE] = Status.VALID
-        if self._status is None:
-            hashes = paragraphs.search(where(SOURCE_LANGUAGE) == self._hash[SOURCE_LANGUAGE])
-            source_text = self._texts.get(SOURCE_LANGUAGE)
-            if source_text is None:
-                self._status = invalid_status
-            elif len(hashes) > 1:
-                raise Exception("There are to many results for text %s: %r" % (source_text[:20], hashes))
-            elif not hashes:
-                self._status = invalid_status
-            else:
-                hashes = hashes[0]
-                status = {}
-                for key, value in self._hash.items():
-                    status[key] = Status.VALID if value == hashes[key] else Status.INVALID
-                status[SOURCE_LANGUAGE] = Status.VALID
-                self._status = status
+        source_obj = self._text_objs[SOURCE_LANGUAGE]
+        # if self._status is None:
+
+        # source_text = self._texts.get(SOURCE_LANGUAGE)
+        if source_obj is None:
+            for obj in self._text_objs.values():
+                obj.set_status(Status.INVALID)
+            return
+
+        translations = paragraphs.search(where(SOURCE_LANGUAGE) == source_obj.get_text())
+
+        if len(translations) > 1:
+            raise Exception("There are to many results for text %s: %r" % (source_obj.get_text()[:20], translations))
+        elif not translations:
+            for obj in self._text_objs.values():
+                obj.set_status(Status.INVALID)
+        else:
+            translation = translations[0]
+            for lang, value in self._text_objs.items():
+                if translation[lang] == value.get_text():
+                    value.set_status(Status.VALID)
+                else:
+                    value.set_status(Status.INVALID)
+        source_obj.set_status(Status.VALID)
 
 
 class DocumentSource(object):
@@ -130,29 +157,41 @@ class DocumentSource(object):
     def __init__(self, path, language):
         self._path = path
         self._lang = language
+        self._texts = None
 
     def parsed(self):
         with open(self._path, 'r') as source:
             source_text = source.read().decode('utf-8')
         try:
+            texts = []
             parser = Parser(StringIO(source_text))
             results = parser.parse()
-
+            for result in results:
+                text = Text(result)
+                text.set_source(self)
+                texts.append(text)
+            self._texts = texts
         except PE as exc:
             raise ParseException("%s in %s" % (exc, self._path))
-        return results
+        return self._texts
 
     def get_language(self):
         return self._lang
 
 
 class Document(object):
-    def __init__(self, name, sources):
+    def __init__(self, name, sources_paths):
         """
         name - document name
         sources - list of directories, one for each language
         """
         self._name = name
+        sources = {}
+        for source in sources_paths:
+            file_name = os.path.basename(source)
+            language = file_name[len(DIR_NAME_PREFIX):]
+            path = os.path.join(source, self._name)
+            sources[language] = DocumentSource(path, language)
         self._sources = sources
         self._paragraphs = None
 
@@ -162,18 +201,9 @@ class Document(object):
     def filter(self, name):
         return name == self._name
 
-    def sources(self):
-        sources = []
-        for source in self._sources:
-            file_name = os.path.basename(source)
-            language = file_name[len(DIR_NAME_PREFIX):]
-            path = os.path.join(source, self._name)
-            sources.append(DocumentSource(path, language))
-        return sources
-
     def paragraphs(self):
-        sources = self.sources()
-        parse_results = [(source, source.parsed()) for source in sources]
+        sources = self._sources
+        parse_results = [(source, source.parsed()) for source in sources.values()]
         paragraphs = []
         empty = False
         while not empty:
@@ -190,6 +220,9 @@ class Document(object):
             if not empty:
                 paragraphs.append(paragraph)
         return paragraphs
+
+    # def set_text(self, language, source_hash, text):
+    #     self._sources[language].save(source_hash, text)
 
 
 def get_sources():
@@ -274,16 +307,15 @@ def document_view(request, name):
 @json_view
 def set_valid(data, request):
     pprint(data)
-    hashes = paragraphs.search(where(SOURCE_LANGUAGE) == data['source_hash'])
-    return {}
-    if len(hashes):
+    translations = paragraphs.search(where(SOURCE_LANGUAGE) == data['source_text'])
+    if len(translations):
         paragraphs.update(
-            {data['target_language']: data['target_hash']},
-            where(SOURCE_LANGUAGE) == data['source_hash'])
+            {data['target_language']: data['target_text']},
+            where(SOURCE_LANGUAGE) == data['source_text'])
     else:
         paragraphs.insert(
             {
-                data['source_language']: data['source_hash'],
-                data['target_language']: data['target_hash']
+                data['source_language']: data['source_text'],
+                data['target_language']: data['target_text']
             })
     return {}
