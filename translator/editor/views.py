@@ -1,13 +1,16 @@
+import os
 from StringIO import StringIO
 import hashlib
 from pprint import pprint
-from django.shortcuts import render
 
-import os
+from django.shortcuts import render
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import Http404
 from docutils import core, io
 from docutils.nodes import NodeVisitor
 from pyparsing import ParseException as PE
 from tinydb import where
+
 from editor.ajax import json_view
 from editor.parser import Parser
 from editor.db import paragraphs
@@ -88,8 +91,17 @@ class Paragraph(object):
         # self._status = None
         self._text_objs = {}
 
+    def set_for_language(self, language, text):
+        assert isinstance(language, basestring)
+        assert isinstance(text, basestring)
+        self._text_objs[language].set_text(text)
+
+    def get_for_language(self, language):
+        return self._text_objs[language]
+
     def set_for_source(self, source, text_obj):
         assert isinstance(text_obj, Text)
+        assert isinstance(source, DocumentSource)
         language = source.get_language()
         self._text_objs[language] = text_obj
         # if language not in self._text_objs:
@@ -173,7 +185,14 @@ class DocumentSource(object):
             self._texts = texts
         except PE as exc:
             raise ParseException("%s in %s" % (exc, self._path))
-        return self._texts
+        return list(self._texts)
+
+    def save(self):
+        with open(self._path, 'w') as source:
+            for text in self._texts:
+                string = text.get_text()
+                print string,
+                source.write(string.encode('utf-8'))
 
     def get_language(self):
         return self._lang
@@ -198,28 +217,46 @@ class Document(object):
     def __str__(self):
         return self._name
 
-    def filter(self, name):
-        return name == self._name
+    @property
+    def name(self):
+        return self._name
+
+    def save(self, language):
+        self._sources[language].save()
+
+    def set(self, source_text, source_language, target_text, target_language):
+        paragraphs = self.paragraphs()
+        found = False
+        for paragraph in paragraphs:
+            current_text = paragraph.get_for_language(source_language).get_text()
+            assert isinstance(current_text, basestring)
+            if current_text != source_text:
+                continue
+            paragraph.set_for_language(target_language, target_text)
+            found = True
+        if not found:
+            raise Http404("paragraph not found")
 
     def paragraphs(self):
-        sources = self._sources
-        parse_results = [(source, source.parsed()) for source in sources.values()]
-        paragraphs = []
-        empty = False
-        while not empty:
-            empty = True
-            paragraph = Paragraph()
-            for item in parse_results:
-                source, parse_result = item
-                if parse_result:
-                    source_paragraph = parse_result.pop(0)
-                    paragraph.set_for_source(source, source_paragraph)
-                    empty = False
-                else:
-                    paragraph.set_empty_source(source)
-            if not empty:
-                paragraphs.append(paragraph)
-        return paragraphs
+        if self._paragraphs is None:
+            sources = self._sources
+            parse_results = [(source, source.parsed()) for source in sources.values()]
+            paragraphs = []
+            empty = False
+            while not empty:
+                empty = True
+                paragraph = Paragraph()
+                for source, parse_result in parse_results:
+                    if parse_result:
+                        source_paragraph = parse_result.pop(0)
+                        paragraph.set_for_source(source, source_paragraph)
+                        empty = False
+                    else:
+                        paragraph.set_empty_source(source)
+                if not empty:
+                    paragraphs.append(paragraph)
+            self._paragraphs = paragraphs
+        return self._paragraphs
 
     # def set_text(self, language, source_hash, text):
     #     self._sources[language].save(source_hash, text)
@@ -246,6 +283,7 @@ _documents_cache = None
 def get_documents():
     global _documents_cache
     if _documents_cache is None:
+        documents_cache = {}
         sources = get_sources()
         documents = set([x for x in os.listdir(sources[0]) if x.endswith('.rst')])
 
@@ -253,7 +291,10 @@ def get_documents():
             next_documents = set([x for x in os.listdir(item) if x.endswith('.rst')])
             documents = documents | next_documents
 
-        _documents_cache = [Document(x, sources) for x in documents]
+        documents = [Document(x, sources) for x in documents]
+        for document in documents:
+            documents_cache[document.name] = document
+        _documents_cache = documents_cache
     return _documents_cache
 
 
@@ -287,6 +328,7 @@ class MyVisitor(NodeVisitor):
         print "Visiting", node
 
 
+@ensure_csrf_cookie
 def document_list_view(request):
     documents = get_documents()
     return render(
@@ -295,9 +337,10 @@ def document_list_view(request):
         {'documents': documents})
 
 
+@ensure_csrf_cookie
 def document_view(request, name):
     documents = get_documents()
-    document = filter(lambda x: x.filter(name), documents)[0]
+    document = documents[name]
     return render(
         request,
         'editor/document_item.html',
@@ -306,8 +349,16 @@ def document_view(request, name):
 
 @json_view
 def set_valid(data, request):
-    pprint(data)
     translations = paragraphs.search(where(SOURCE_LANGUAGE) == data['source_text'])
+    document = get_documents()[data['document']]
+    assert isinstance(document, Document)
+    document.set(
+        source_text=data['source_text'],
+        source_language=data['source_language'],
+        target_text=data['target_text'],
+        target_language=data['target_language'])
+    document.save(data['target_language'])
+    return {}
     if len(translations):
         paragraphs.update(
             {data['target_language']: data['target_text']},

@@ -1,5 +1,5 @@
 
-pre {
+/*pre {
     border: none;
     width: 100%;
     padding: 0px;
@@ -7,45 +7,56 @@ pre {
     box-sizing: border-box;
     overflow: hidden;
     padding-bottom: 32px;
+}*/
+
+pre {
+    word-break: normal;
+    border-top: 1px solid #ddd;
+    background-color: #eee;
+}
+
+pre:focus{
+    outline: none;
+}
+
+.ace_scrollbar {
+    display: none !important;
 }
 
 textarea:focus {
     overflow: auto;
 }
 
-textarea {
+.ace_hidden-cursors .ace_cursor {
+    opacity: 0 ! important;
+}
+/* textarea { */
+.ace_editor {
     box-sizing: border-box;
     padding: 0px;
     margin: 0px;
     border: none;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    overflow: hidden;
     resize: none;
     outline: none;
-    white-space: pre;
 }
 
 td {
+    padding: 0;
     max-width: 50%;
     width: 50%;
     overflow: hidden;
     position: relative;
     border: none;
     vertical-align: top;
-    padding-bottom: 15px;
+    /*padding-bottom: 15px;*/
     padding-right: 10px;
 }
 
 
 .paragraph {
     padding: 0;
-    margin: 1px;
+    margin: 0;
     position: relative;
-    border-top: 1px solid black;
     margin-right: 20px;
 }
 

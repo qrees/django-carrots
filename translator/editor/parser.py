@@ -135,6 +135,7 @@ class Parser(object):
     def parse_paragraph_end(self):
         line = self.get_cur_line()
         if len(line.strip()) == 0:
+            self.cur_part.write(line)
             self.get_next_line()
             return
         self.indent = self.get_line_indent(line)
@@ -151,8 +152,8 @@ class Parser(object):
     def parse_list(self):
         line = self.get_cur_line()
         if line.startswith("* "):
-            self.next_part()
             self.cur_part.write(line)
+            self.next_part()
             self.get_next_line()
             return
         if self.indent < self.previous_indent:
@@ -163,7 +164,9 @@ class Parser(object):
         return
 
     def next_part(self):
-        self.parts.append(self.cur_part.getvalue())
+        next_part = self.cur_part.getvalue()
+        print '"%s"' % (next_part,)
+        self.parts.append(next_part)
         self.cur_part = StringIO()
 
     def parse_paragraph_start(self):
@@ -200,7 +203,9 @@ class Parser(object):
             next_line = self.get_next_line()
             if next_line.strip() == '':
                 self.state = State.CODE
+                self.cur_part.write(next_line)
                 self.next_part()
+                self.get_next_line()
             return
         if len(line.strip()):
             self.state = State.PARAGRAPH
@@ -208,6 +213,7 @@ class Parser(object):
             self.get_next_line()
             return
         self.state = State.PARAGRAPH_END
+        self.cur_part.write(line)
         self.next_part()
         self.get_next_line()
 

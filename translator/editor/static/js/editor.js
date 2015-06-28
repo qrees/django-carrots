@@ -17,6 +17,7 @@
 
     function setup_csrf(){
         var csrftoken = getCookie('csrftoken');
+        console.log("setup_csrf", csrftoken);
         function csrfSafeMethod(method) {
             // these HTTP methods do not require CSRF protection
             return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
@@ -45,18 +46,19 @@
         var target = $el.parents('[data-lang]');
         var target_hash = target.data('hash')
         var target_language = target.data('lang');
-        var target_text = target.find('textarea').val();
+        var target_text = target.find('pre').text();
         var source = target.parent().find("[data-is-source=True]");
         var source_hash = source.data('hash');
         var source_lang = source.data('lang');
-        var source_text = source.find('textarea').val();
+        var source_text = source.find('pre').text();
         var data = {
             'source_hash': source_hash,
             'source_language': source_lang,
             'source_text': source_text,
             'target_hash': target_hash,
             'target_language': target_language,
-            'target_text': target_text
+            'target_text': target_text,
+            'document': DOCUMENT_NAME
         }
         ajax_post(data, function (response_data) {
             target.
@@ -69,6 +71,22 @@
 
     function main(){
         setup_csrf();
+
+        $('textarea').each(function(index, value){
+//            var parent = value.parentNode;
+//            var editor = ace.edit(value);
+//           editor.renderer.setShowGutter(false);
+//           editor.renderer.hideCursor();
+//           editor.session.setUseWrapMode(true);
+//           editor.setOption("highlightActiveLine", false);
+//            var newHeight =
+//                      editor.getSession().getScreenLength()
+//                      * editor.renderer.lineHeight
+//                      + 0;
+//            $(parent).find('.ace_editor').height(newHeight.toString() + "px");
+//            editor.resize();
+        })
+
         $('[data-onclick]').on('click', function(event){
             var target = $(event.currentTarget);
             var onclick = target.data('onclick');
