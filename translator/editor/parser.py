@@ -1,8 +1,5 @@
 #-*- coding: utf-8 -*-
 from StringIO import StringIO
-from pprint import pprint
-from pyparsing import OneOrMore, StringEnd, LineEnd, ZeroOrMore, Regex, Group, Literal, Word, alphas, Combine, \
-    QuotedString, printables, Optional, Suppress
 import re
 
 from docutils.utils import new_document
@@ -12,44 +9,6 @@ from docutils.nodes import section, paragraph, Text, title, system_message, lite
 from sphinx.directives import code, other
 from sphinx.ext.doctest import TestsetupDirective, TestcleanupDirective, DoctestDirective, TestcodeDirective, TestoutputDirective
 from docutils.parsers.rst import directives
-
-
-def debug(name):
-
-    def inner_debug(text, loc, parsed):
-        print name, loc, ":", "".join(parsed)[:50], '...'
-    return inner_debug
-
-#
-# Name = Word(alphas+"-_")
-# # EndOfLine = Literal("\n\r") | Literal("\r\n") | Literal("\n") | Literal("\r")
-# Whitespace = Regex(r"[ \t]")
-# Whitespace.leaveWhitespace()
-# EmptyLine = ZeroOrMore(Whitespace()) + LineEnd()
-# EndOfLines = Suppress(ZeroOrMore(Group(EmptyLine())))
-# EndOfLines.leaveWhitespace()
-# # TextLine = Regex("[ ]*[-a-zA-Z0-9().`>\"'$].*") + LineEnd()
-# TextLine = Regex("[ ]*[^\s].*") + LineEnd()
-# TextLine.leaveWhitespace()
-#
-# BlockHeader = Literal(".. ") + Name + Literal("::") + Optional(OneOrMore(Whitespace()) + Name) + LineEnd()
-# Block = BlockHeader + LineEnd() + OneOrMore(OneOrMore(Whitespace) + Regex(".*\n"))
-# Block.setParseAction(debug("block"))
-#
-# MultiLine = OneOrMore(TextLine)
-# Text = MultiLine + Suppress(LineEnd())
-# Text.setParseAction(debug("text"))
-#
-# HeaderMarker = Regex("={3,}|-{3,}|_{3,}|\.{3,}|,{3,}") + LineEnd()
-# Header = Optional(HeaderMarker()) + TextLine() + HeaderMarker()
-# Header.setParseAction(debug("header"))
-#
-# Part = EndOfLines() + Combine(Group(Block() | Header() | Text()))
-# Part("Part")
-# Parts = ZeroOrMore(Part)
-# DocumentParser = Parts() + EndOfLines + StringEnd()
-#
-# DocumentParser.leaveWhitespace()
 
 
 class State(object):
@@ -79,9 +38,9 @@ class Parser(object):
 
     def parse(self):
         while not self.eof:
-            # print self.state
-            # print repr(self.get_cur_line())
-            # print
+            print self.state
+            print repr(self.get_cur_line())
+            print
             if self.state == State.PARAGRAPH_START:
                 self.parse_paragraph_start()
                 continue
@@ -151,12 +110,21 @@ class Parser(object):
 
     def parse_list(self):
         line = self.get_cur_line()
+        # if self.indent < self.previous_indent:
+        #     self.next_part()
+        #     self.cur_part.write(line)
+        #     self.get_next_line()
+        #     self.state = State.PARAGRAPH_END
+        #     return
         if line.startswith("* "):
+            self.next_part()
+            self.cur_part.write(line)
+            self.get_next_line()
+            return
+        if not line.strip():
             self.cur_part.write(line)
             self.next_part()
             self.get_next_line()
-            return
-        if self.indent < self.previous_indent:
             self.state = State.PARAGRAPH_END
             return
         self.cur_part.write(line)
@@ -165,7 +133,6 @@ class Parser(object):
 
     def next_part(self):
         next_part = self.cur_part.getvalue()
-        print '"%s"' % (next_part,)
         self.parts.append(next_part)
         self.cur_part = StringIO()
 

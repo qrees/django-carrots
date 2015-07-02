@@ -72,21 +72,6 @@
     function main(){
         setup_csrf();
 
-        $('textarea').each(function(index, value){
-//            var parent = value.parentNode;
-//            var editor = ace.edit(value);
-//           editor.renderer.setShowGutter(false);
-//           editor.renderer.hideCursor();
-//           editor.session.setUseWrapMode(true);
-//           editor.setOption("highlightActiveLine", false);
-//            var newHeight =
-//                      editor.getSession().getScreenLength()
-//                      * editor.renderer.lineHeight
-//                      + 0;
-//            $(parent).find('.ace_editor').height(newHeight.toString() + "px");
-//            editor.resize();
-        })
-
         $('[data-onclick]').on('click', function(event){
             var target = $(event.currentTarget);
             var onclick = target.data('onclick');
