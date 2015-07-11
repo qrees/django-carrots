@@ -1,6 +1,6 @@
 from functools import partial
 from pyparsing import OneOrMore, StringEnd, LineEnd, ZeroOrMore, Regex, Group, Literal, Word, alphas, Combine, \
-    QuotedString, printables, Optional, Suppress
+    QuotedString, printables, Optional, Suppress, ParseException
 
 
 def debug(name):
@@ -25,7 +25,7 @@ class GenericNode(Node):
         self._type = type_
 
     def __str__(self):
-        return "%s:\n%s" % (self._type, "".join(self._toc,))
+        return "%s:\n    %s" % (self._type, "".join(self._toc,))
 
 
 class _Parts(Node):
@@ -41,7 +41,6 @@ Whitespace.leaveWhitespace()
 EmptyLine = ZeroOrMore(Whitespace()) + LineEnd()
 EndOfLines = Suppress(ZeroOrMore(Group(EmptyLine())))
 EndOfLines.leaveWhitespace()
-# TextLine = Regex("[ ]*[-a-zA-Z0-9().`>\"'$].*") + LineEnd()
 TextLine = Regex(r"([^\s*]|[ ]+[^ ]).*") + LineEnd()
 TextLine.leaveWhitespace()
 
@@ -53,6 +52,11 @@ MultiLine = OneOrMore(TextLine)
 Text = MultiLine + Suppress(LineEnd())
 Text.setParseAction(partial(GenericNode, 'text'))
 
+# TextBeforeCode = MultiLine + Literal("::") + Suppress(LineEnd())
+# TextBeforeCode.setParseAction(partial(GenericNode, 'textbeforecode'))
+#
+# TextAndCode = TextBeforeCode
+
 ListItem = Regex(r"\*.*") + LineEnd() + Optional(MultiLine)
 ListItem.leaveWhitespace()
 ListItem.setParseAction(partial(GenericNode, 'listItem'))
@@ -63,7 +67,7 @@ HeaderMarker = Regex("={3,}|-{3,}|_{3,}|\.{3,}|,{3,}") + LineEnd()
 Header = Optional(HeaderMarker()) + TextLine() + HeaderMarker()
 Header.setParseAction(partial(GenericNode, 'header'))
 
-Part = EndOfLines() + Combine(Group(Block() | Header() | Text() | List()))
+Part = EndOfLines() + Combine(Block() | Header() | Text() | List())
 Part("Part")
 Parts = ZeroOrMore(Part)
 Parts.setParseAction(_Parts)
@@ -71,3 +75,13 @@ Parts.setParseAction(_Parts)
 DocumentParser = Parts() + EndOfLines + StringEnd()
 DocumentParser.leaveWhitespace()
 DocumentParser.setParseAction(lambda s, loc, toc: str(toc[0]))
+
+
+def parse(string):
+    if not string.endswith("\n"):
+        string += "\n"
+    try:
+        return DocumentParser.parseString(string)
+    except ParseException as exc:
+        print exc.line
+        raise

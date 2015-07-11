@@ -2,8 +2,9 @@
 from StringIO import StringIO
 from pprint import pprint
 from django.test import TestCase
+from pyparsing import ParseException
 from editor.parser import Parser, RSTParser
-from editor.pyparser import DocumentParser
+from editor.pyparser import DocumentParser, parse
 
 
 lists = u"""
@@ -75,8 +76,12 @@ Napisy
 
 class TestParser(TestCase):
 
-    def test_pyparser(self):
+    def test_pyparser_lists(self):
         result = DocumentParser.parseString(lists)
+        print result[0]
+
+    def test_pyparser_code(self):
+        result = parse(code)
         print result[0]
 
     def test_parse(self):
