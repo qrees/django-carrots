@@ -4,7 +4,7 @@ from pprint import pprint
 from django.test import TestCase
 from pyparsing import ParseException
 from editor.parser import Parser, RSTParser
-from editor.pyparser import DocumentParser, parse
+from editor.pyparser import DocumentParser, parse, dump
 
 
 lists = u"""
@@ -17,6 +17,22 @@ paragraph
 * list item 3
 
 paragraph
+"""
+
+paragraphs = u"""
+paragraph1
+
+paragraph2
+
+    paragraph3
+
+        paragraph4
+
+        paragraph5
+
+        paragraph6
+
+paragraph7
 """
 
 code = u"""
@@ -75,6 +91,10 @@ Napisy
 
 
 class TestParser(TestCase):
+
+    def test_pyparser_paragraphs(self):
+        result = DocumentParser.parseString(paragraphs)
+        dump(result)
 
     def test_pyparser_lists(self):
         result = DocumentParser.parseString(lists)

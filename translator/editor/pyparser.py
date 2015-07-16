@@ -1,6 +1,6 @@
 from functools import partial
 from pyparsing import OneOrMore, StringEnd, LineEnd, ZeroOrMore, Regex, Group, Literal, Word, alphas, Combine, \
-    QuotedString, printables, Optional, Suppress, ParseException
+    QuotedString, printables, Optional, Suppress, ParseException, Forward, indentedBlock
 
 
 def debug(name):
@@ -15,7 +15,7 @@ class Node(object):
     def __init__(self, s, loc, toc):
         self._s = s
         self._loc = loc
-        self._toc = toc
+        self._toc = list(toc)
 
 
 class GenericNode(Node):
@@ -25,13 +25,34 @@ class GenericNode(Node):
         self._type = type_
 
     def __str__(self):
-        return "%s:\n    %s" % (self._type, "".join(self._toc,))
+        return "%s:\n    %s" % (self._type, "".join([str(x) for x in self._toc]))
+
+    def __repr__(self):
+        return "<GenericNode: %s>" % (self._type,)
+
+
+def generic(name):
+    return partial(GenericNode, name)
 
 
 class _Parts(Node):
 
     def __str__(self):
-        return "".join(self._toc,)
+        return " | ".join([str(x) for x in self._toc])
+
+
+def dump(result, indent=0):
+    if isinstance(result, basestring):
+        print "%s%r" % (" " * indent, result)
+        return
+    assert not isinstance(result, basestring)
+    print "%s%r" % (" " * indent, result)
+    try:
+        for x in iter(result):
+            dump(x, indent+4)
+    except TypeError:
+        for x in iter(result._toc):
+            dump(x, indent+4)
 
 
 Name = Word(alphas+"-_")
@@ -47,10 +68,13 @@ TextLine.leaveWhitespace()
 BlockHeader = Literal(".. ") + Name + Literal("::") + Optional(OneOrMore(Whitespace()) + Name) + LineEnd()
 Block = BlockHeader + LineEnd() + OneOrMore(OneOrMore(Whitespace) + Regex(".*\n"))
 Block.setParseAction(debug("block"))
+Block.setName('block')
 
-MultiLine = OneOrMore(TextLine)
+MultiLine = Combine(OneOrMore(TextLine))
+MultiLine.setParseAction(partial(GenericNode, 'multiline'))
 Text = MultiLine + Suppress(LineEnd())
 Text.setParseAction(partial(GenericNode, 'text'))
+Text.setName('text')
 
 # TextBeforeCode = MultiLine + Literal("::") + Suppress(LineEnd())
 # TextBeforeCode.setParseAction(partial(GenericNode, 'textbeforecode'))
@@ -67,14 +91,27 @@ HeaderMarker = Regex("={3,}|-{3,}|_{3,}|\.{3,}|,{3,}") + LineEnd()
 Header = Optional(HeaderMarker()) + TextLine() + HeaderMarker()
 Header.setParseAction(partial(GenericNode, 'header'))
 
-Part = EndOfLines() + Combine(Block() | Header() | Text() | List())
-Part("Part")
-Parts = ZeroOrMore(Part)
+# Parts = Forward()
+Part = Forward()
+
+
+def parsed_indent(s, l, toc):
+    if len(toc) > 0:
+        return _Parts(s, l, [x[0] for x in toc[0]])
+
+
+Part <<= EndOfLines() + \
+         Combine(Block() | Header() | Text() | List()).setParseAction(generic('bhtl')) + \
+         Optional(indentedBlock(Part, [1])).setParseAction(parsed_indent)
+Part.setParseAction(partial(GenericNode, 'part'))
+Parts = OneOrMore(Part)
+# Parts <<= Part + Optional(indentedBlock(Parts, [0]))
+# Parts = ZeroOrMore(Part)
 Parts.setParseAction(_Parts)
 
 DocumentParser = Parts() + EndOfLines + StringEnd()
 DocumentParser.leaveWhitespace()
-DocumentParser.setParseAction(lambda s, loc, toc: str(toc[0]))
+DocumentParser.setParseAction(partial(GenericNode, 'document'))
 
 
 def parse(string):
